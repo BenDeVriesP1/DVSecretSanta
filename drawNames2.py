@@ -43,7 +43,7 @@ def loadNamesFromFile(file :str) -> list[santaObj]:
     with open(file,'r') as f:
         raw = f.read()
     lines = raw.split('\n')
-    if lines[0] != 'Name,Email,Rejects':
+    if 'Name,Email,Rejects' not in lines[0]:
         raise Exception("bad file")
     lines.pop(0)
     santas = []

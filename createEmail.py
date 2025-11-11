@@ -22,7 +22,7 @@ class emailCreator:
         message = self.template
         message = message.replace("<santaName>",santaName)
         message = message.replace('<giftee>',giftee)
-        message = message.replace('drawingName',drawingName)
+        message = message.replace('<drawingName>',drawingName)
         return message
 
 
