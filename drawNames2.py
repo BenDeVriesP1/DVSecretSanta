@@ -65,7 +65,9 @@ def makeNameTrain(santaList: list[dict[str]]) ->list[tuple[dict[str],dict[str]]]
         picklist.append((picker,pickee))
         picker=pickee
         nameList.pop(nameList.index(picker))
-    picklist.append((picker,head))
+    if(head['name'] in picker['rejects']):
+        print(f"Could not find a match for {picker['name']} retry")
+        return makeNameTrain(santaList)
     return picklist
     
 
@@ -79,10 +81,14 @@ def makeAssignmentFolder(drawingName : str):
         os.mkdir(pathname)
     return pathname
 
-def saveRedundantCopy(path: str,drawingsName: str,train: tuple[str,str]):
+def saveRedundantCopy(path: str,drawingsName: str,theList: str,train: tuple[str,str]):
 
+    with open(theList,'r') as f:
+        with open(f"{path}\\theList.csv","w+") as f2:
+            f2.write(f.read())
     with open(f"{path}\\{drawingsName.replace(' ','_').replace(':','-')}_master_copy.txt",'w+') as bigfile:
         bigfile.write(f"the drawing for {drawingsName} was as follows\n")
+
 
         for car in train:
             bigfile.write(f"{car[0]['name']} picked {car[1]['name']}\n")
@@ -117,7 +123,7 @@ def main():
 
     listFolder=makeAssignmentFolder(drawingName)
     santaTrain=makeNameTrain(santas)
-    saveRedundantCopy(listFolder,drawingName,santaTrain)
+    saveRedundantCopy(listFolder,drawingName,theList,santaTrain)
 
     for car in santaTrain:
         printV(f"{car[0]['name']} picked {car[1]['name']}")
