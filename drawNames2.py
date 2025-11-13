@@ -13,33 +13,7 @@ def printV(str):
     if verbose_print:
         print(str)
 
-class santaObj:
-    def __init__(self,name: str,email : str = '',rejects : str | list[str] = ''):
-        self.name = name
-        self.email = email if email != '' else 'N/A'
-        if(type(rejects) == str):
-            self.rejects = [rejects]
-        else:
-            self.rejects = rejects
-        self.giftee = 'NoOne?'
-
-    def setGiftee(self,giftee: str):
-        self.giftee = giftee
-
-    def getRejects(self) -> list[str]:
-        return self.rejects
-    
-    def getGiftee(self) -> str:
-        return self.giftee
-    
-    def getEmail(self) -> str:
-        return self.email
-    
-    def getName(self) -> str:
-        return self.name
-    
-
-def loadNamesFromFile(file :str) -> list[santaObj]:
+def loadNamesFromFile(file :str) -> list[dict[str]]:
     with open(file,'r') as f:
         raw = f.read()
     lines = raw.split('\n')
@@ -60,40 +34,34 @@ def loadNamesFromFile(file :str) -> list[santaObj]:
         while (len(words) > lineIndex):
             rejects.append(words[lineIndex])
             lineIndex=lineIndex+1
-        santas.append(santaObj(name,email,rejects))
+        santas.append({"name": name, "email" : email, "rejects": rejects})
     
     return santas
 
 
-def getSantaByName(santaList: list[santaObj],name: str) -> santaObj:
-    for santa in santaList:
-        if santa.getName() == name:
-            return santa
-    return None
 
 
-def makeNameTrain(santaList: list[santaObj]) ->tuple[str,str]:
-    nameList=[santa.getName() for santa in santaList]
-    picklist=[]
+def makeNameTrain(santaList: list[dict[str]]) ->list[tuple[dict[str],dict[str]]]:
+    nameList=santaList.copy() #list assingments also pass by ref
+    picklist : list[tuple[dict[str],dict[str]]] =[]
     
     head=nameList[random.randint(0,len(nameList)-1)]
     picker=head
     nameList.pop(nameList.index(picker))
     while(len(nameList)):
-        pickerSanta = getSantaByName(santaList,picker)
         indexes = [_ for _ in range(len(nameList))]
         random.shuffle(indexes)
         index=0
         for _ in range(0,len(indexes)):
-            if(not nameList[indexes[index]] in pickerSanta.getRejects()):
+            if(not nameList[indexes[index]]['name'] in picker['rejects']):
                 pickee=nameList[indexes[index]]
                 break
             index=index+1
         if(index == len(indexes)):
-            print(f"Could not find a match for {picker} retry")
+            print(f"Could not find a match for {picker['name']} retry")
             return makeNameTrain(santaList)
 
-        pickerSanta.setGiftee(pickee)
+        picker["giftee"] = pickee
         picklist.append((picker,pickee))
         picker=pickee
         nameList.pop(nameList.index(picker))
@@ -117,10 +85,10 @@ def saveRedundantCopy(path: str,drawingsName: str,train: tuple[str,str]):
         bigfile.write(f"the drawing for {drawingsName} was as follows\n")
 
         for car in train:
-            bigfile.write(f"{car[0]} picked {car[1]}\n")
-            with open(f"{path}\\{car[0]}s_assingment.txt",'w') as f:
-                f.write(f"FOR {car[0].upper()}S EYES ONLY DONT BE A CHEATER AND PEEK\n\n\n\n\n\n\n")
-                f.write(f"{car[0]} you are getting a gift for {car[1]}")
+            bigfile.write(f"{car[0]['name']} picked {car[1]['name']}\n")
+            with open(f"{path}\\{car[0]['name']}s_assingment.txt",'w') as f:
+                f.write(f"FOR {car[0]['name'].upper()}S EYES ONLY DONT BE A CHEATER AND PEEK\n\n\n\n\n\n\n")
+                f.write(f"{car[0]['name']} you are getting a gift for {car[1]['name']}")
 
 
 
@@ -131,25 +99,28 @@ def main():
     parser.add_argument('--name','-n',type=str, help="Name of this little escipade",default=datetime.datetime.now().strftime("Drawing at %I:%M%p on %B %d %Y"))
     parser.add_argument('-list','-l',type=str, help="file to create strings for",default="example.csv")
     parser.add_argument('--creds','-c',help="email credentials")
-    parser.add_argument('-v','--verbose',action='store_true')
+    parser.add_argument('--verbose','-v',action='store_true')
     args = parser.parse_args()
 
     verbose_print = args.verbose
     theList=args.list
-    name=args.name
+    drawingName=args.name
     if(args.creds):
         sendEmail=True
     else:
         sendEmail=False
 
     santas = loadNamesFromFile(theList)
-    listFolder=makeAssignmentFolder(name)
-    santaTrain=makeNameTrain(santas)
-    saveRedundantCopy(listFolder,name,santaTrain)
     for santa in santas:
-        printV(f"{santa.getName()} has a email of: {santa.getEmail()} and rejects {[name for name in santa.getRejects()]}")
+        printV(f"{santa['name']} has a email of: {santa['email']} and rejects {[name for name in santa['rejects']]}")
+
+
+    listFolder=makeAssignmentFolder(drawingName)
+    santaTrain=makeNameTrain(santas)
+    saveRedundantCopy(listFolder,drawingName,santaTrain)
+
     for car in santaTrain:
-        printV(f"{car[0]} picked {car[1]}")
+        printV(f"{car[0]['name']} picked {car[1]['name']}")
 
     if(sendEmail):
         with open(args.creds,'r') as f:
@@ -161,11 +132,10 @@ def main():
         with smtplib.SMTP_SSL(creds['server'], creds['port']) as smtp_server:
             smtp_server.login(sendemail, creds['password'])
             for car in santaTrain:
-                santa: santaObj = getSantaByName(santas,car[0])
-                if '@' in santa.getEmail() and '.' in santa.getEmail(): #thats a good enough valid email regex right??
-                    body=theCreator.createBody(car[0],car[1],name)
-                    email=theCreator.makeEmail(sendemail,[santa.getEmail()],f"{name} secret santa drawing",body)
-                    smtp_server.sendmail(creds['email'],santa.getEmail(),email)
+                if '@' in car[0]['email'] and '.' in car[0]['email']: #thats a good enough valid email regex right??
+                    body=theCreator.createBody(car[0]['name'],car[1]['name'],drawingName)
+                    email=theCreator.makeEmail(sendemail,[car[0]['email']],f"{drawingName} secret santa drawing",body)
+                    smtp_server.sendmail(creds['email'],car[0]['email'],email)
 
 
 
