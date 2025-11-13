@@ -1,0 +1,6 @@
+Name,Email,Rejects
+Santa1,Santa@domain.com,Santa2,Santa3,Santa5
+Santa2,,Santa1
+Santa3,,Santa4
+Santa4,,Santa3
+Santa5,Santa@domain.com,
