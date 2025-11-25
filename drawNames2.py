@@ -97,20 +97,32 @@ def saveRedundantCopy(path: str,drawingsName: str,theList: str,train: tuple[str,
                 f.write(f"{car[0]['name']} you are getting a gift for {car[1]['name']}")
 
 
+def validateList(santaList: list[dict[str]]) -> bool:
+    validList=True
+    giverlist=[santa['name'] for santa in santaList]
+    for santa in santaList:
+        for reject in santa['rejects']:
+            if reject not in giverlist:
+                print(f"ERROR: {santa['name']} rejects {reject} who is not in this drawing")
+                validList=False
+    return validList
 
 
 def main():
     global verbose_print
     parser = argparse.ArgumentParser(prog='Secret santa picker')
-    parser.add_argument('--name','-n',type=str, help="Name of this little escipade",default=datetime.datetime.now().strftime("Drawing at %I:%M%p on %B %d %Y"))
-    parser.add_argument('-list','-l',type=str, help="file to create strings for",default="example.csv")
+    parser.add_argument('--name','-n',type=str, help="Name of this little escipade",default=datetime.datetime.now().strftime("%I:%M%p on %B %d %Y"))
+    parser.add_argument('--list','-l',type=str, help="file to create strings for",default="example.csv")
+    parser.add_argument('--templateLetter','-t',type=str, help="file to create strings for",default="Example_Message.txt")
     parser.add_argument('--creds','-c',help="email credentials")
     parser.add_argument('--verbose','-v',action='store_true')
+    #parser.add_argument()
     args = parser.parse_args()
 
     verbose_print = args.verbose
     theList=args.list
     drawingName=args.name
+    letterTemplate=args.templateLetter
     if(args.creds):
         sendEmail=True
     else:
@@ -119,6 +131,9 @@ def main():
     santas = loadNamesFromFile(theList)
     for santa in santas:
         printV(f"{santa['name']} has a email of: {santa['email']} and rejects {[name for name in santa['rejects']]}")
+
+    if not validateList(santas):
+        return
 
 
     listFolder=makeAssignmentFolder(drawingName)
@@ -132,15 +147,14 @@ def main():
         with open(args.creds,'r') as f:
             creds = json.loads(f.read())
 
-        theCreator=emailCreator('LetterTemplate.txt')
+        theCreator=emailCreator(letterTemplate)
         sendemail = creds['email']
 
         with smtplib.SMTP_SSL(creds['server'], creds['port']) as smtp_server:
             smtp_server.login(sendemail, creds['password'])
             for car in santaTrain:
                 if '@' in car[0]['email'] and '.' in car[0]['email']: #thats a good enough valid email regex right??
-                    body=theCreator.createBody(car[0]['name'],car[1]['name'],drawingName)
-                    email=theCreator.makeEmail(sendemail,[car[0]['email']],f"{drawingName} secret santa drawing",body)
+                    email=theCreator.createEmail(drawingName,creds['email'],car[0],car[1]['name'])
                     smtp_server.sendmail(creds['email'],car[0]['email'],email)
 
 

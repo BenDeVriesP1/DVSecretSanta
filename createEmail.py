@@ -1,37 +1,41 @@
+from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
 
 
-
-
 class emailCreator:
-    def __init__(self,templatePath: str):
+    def __init__(self,templatePath: str,subjectTemplate: str = "@@drawingName@@ secret santa drawing"):
         with open(templatePath,'r') as f:
             self.template = f.read()
+        with open("htmlTemplate.html",'r') as f:
+            self.html = f.read()
+        self.subjectTemplate = subjectTemplate
         
 
 
-    def makeEmail(self,sender :str,recipients: list[str],subject: str,body :str) -> str:
-        message = MIMEText(body)
-        message['Subject'] = subject
+    def createEmail(self,drawingName: str,sender:str,santa: dict[str],giftee) -> str:
+        body=self.template
+
+        message = MIMEMultipart('alternative')
+        part1 = MIMEText(body, 'plain')
+        
+        htmlMessage=''
+        for line in body.split('\n'):
+            htmlMessage+='<p>'
+            htmlMessage+=line
+            htmlMessage+='</p>\n'
+
+        htmlCopy=self.html
+        htmlCopy=htmlCopy.replace("@@mainHTMLMessage@@",htmlMessage)
+        
+        part2 = MIMEText(htmlCopy, 'html')
+        
+        message['Subject'] = self.subjectTemplate
         message['From'] = sender
-        message['To'] = ', '.join(recipients)
-        return message.as_string()
-    
-
-    def createBody(self,santaName,giftee,drawingName):
-        message = self.template
-        message = message.replace("<santaName>",santaName)
-        message = message.replace('<giftee>',giftee)
-        message = message.replace('<drawingName>',drawingName)
-        return message
-
-
-
-
-
-
-# def main():
-#     print(makeEmail("ben.devries@phase1eng.com",["bendrummerboy@gmail.com"],'what does this look like','your secret santa assingment'))
-
-# if __name__ == '__main__':
-#     main()
+        message['To'] = ', '.join([santa['email']])
+        message.attach(part1)
+        message.attach(part2)
+        rawMessage=message.as_string()
+        rawMessage=rawMessage.replace("@@name@@",santa['name'])
+        rawMessage=rawMessage.replace("@@giftee@@",giftee)
+        rawMessage=rawMessage.replace("@@drawingName@@",drawingName)
+        return rawMessage

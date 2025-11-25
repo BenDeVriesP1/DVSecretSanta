@@ -1,0 +1,9 @@
+Hello @@name@@,
+You are receiving this email in order to inform you of your assignment for the @@drawingName@@ secret Santa drawing.
+
+You are getting @@giftee@@ a present this year!
+
+Merry Christmas from
+The Secret Santa Coordination Committee 
+
+To Unsubscribe from this email track down Ben DeVries and inform him of your wishes
