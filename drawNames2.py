@@ -68,6 +68,10 @@ def makeNameTrain(santaList: list[dict[str]]) ->list[tuple[dict[str],dict[str]]]
     if(head['name'] in picker['rejects']):
         print(f"Could not find a match for {picker['name']} retry")
         return makeNameTrain(santaList)
+    pickee = head
+    picker["giftee"] = pickee
+    picklist.append((picker,pickee))
+
     return picklist
     
 
