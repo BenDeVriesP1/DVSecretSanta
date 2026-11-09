@@ -32,7 +32,8 @@ def loadNamesFromFile(file :str) -> list[dict[str]]:
         lineIndex=2
         rejects = []
         while (len(words) > lineIndex):
-            rejects.append(words[lineIndex])
+            if words[lineIndex] != '':
+                rejects.append(words[lineIndex])
             lineIndex=lineIndex+1
         santas.append({"name": name, "email" : email, "rejects": rejects})
     
